@@ -24,11 +24,11 @@ export class UserRepository extends Repository<User> {
         }
     }
 
-    async signIn(credentialsDto: CredentialsDto): Promise<string> {
+    async signIn(credentialsDto: CredentialsDto): Promise<User> {
         const { email, password } = credentialsDto;
         const user = await this.findOne({ email });
         if (user && await bcrypt.compare(password, user.password)) {
-            return user.email;
+            return user;
         }
         return null;
     }

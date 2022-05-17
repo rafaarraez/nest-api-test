@@ -3,11 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import application from './config/application';
+import aws from './config/aws';
 import database from './config/database';
 import jwt from './config/jwt';
 import mail from './config/mail';
 import { EmailModule } from './email/email.module';
 import { EmailOptionsInterface } from './email/interfaces/email-options.interface';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -29,7 +31,8 @@ import { EmailOptionsInterface } from './email/interfaces/email-options.interfac
       useFactory: (configService: ConfigService) => configService.get('typeorm') as TypeOrmModuleOptions,
     }),
     AuthModule,
-    EmailModule
+    EmailModule,
+    FilesModule
   ],
   controllers: [],
   providers: [],

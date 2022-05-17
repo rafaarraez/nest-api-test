@@ -38,13 +38,13 @@ export class AuthService {
     }
 
     async signIn(credentialsDot: CredentialsDto): Promise<SignInResponseDto> {
-        const email = await this.userRepository.signIn(credentialsDot);
+        const user = await this.userRepository.signIn(credentialsDot);
 
-        if (!email) {
+        if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const payload: JwtPayload = { email };
+        const payload: JwtPayload = { id: user.id, email: user.email };
         const accessToken = await this.jwtService.sign(payload);
 
         return { accessToken };
@@ -67,7 +67,6 @@ export class AuthService {
         await this.recoverPasswordRepository.save({ ...recover, code, expirationDate, email, valid: true });
 
         let emailResponse = await this.sendRecoverPasswordEmail(email, code);
-        console.log("emailResponse", emailResponse);
 
         return { message: "A message with recovery code has been sent." }
 
@@ -103,7 +102,8 @@ export class AuthService {
 
     private sendRecoverPasswordEmail(email: string, code: string): Promise<void> {
         return this.emailService.sendMail({
-            to: 'rafa.arraez.gue@gmail.com',
+            from: 'aluxion@contact.com',
+            to: email,
             subject: RECOVER_PASSWORD_EMAIL_SUBJECT,
             text: RECOVER_PASSWORD_EMAIL_BODY + code,
         });

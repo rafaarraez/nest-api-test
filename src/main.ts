@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-   const config = new DocumentBuilder()
+  const config = new DocumentBuilder()
     .setTitle('Nest Aluxion test')
     .setVersion('1.0')
     .addTag('files')
