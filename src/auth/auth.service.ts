@@ -20,6 +20,7 @@ import {
     RECOVER_PASSWORD_MAX_CODE,
     RECOVER_PASSWORD_MIN_CODE,
 } from './constants/recover-password.constants';
+import { GenericResponse } from 'src/common/interfaces/generic-response.interface';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +33,7 @@ export class AuthService {
         private readonly emailService: EmailService,
     ) { }
 
-    async signUp(credentialsDot: CredentialsDto): Promise<void> {
+    async signUp(credentialsDot: CredentialsDto): Promise<GenericResponse> {
         return this.userRepository.signUp(credentialsDot);
     }
 
@@ -50,7 +51,7 @@ export class AuthService {
 
     }
 
-    async requestPasswordRecovery(recoverPasswordDto: RecoverPasswordDto): Promise<void> {
+    async requestPasswordRecovery(recoverPasswordDto: RecoverPasswordDto): Promise<GenericResponse> {
         const { email } = recoverPasswordDto;
         const user = await this.userRepository.findOne({ email }, { select: ['id', 'email'] });
 
@@ -65,7 +66,11 @@ export class AuthService {
 
         await this.recoverPasswordRepository.save({ ...recover, code, expirationDate, email, valid: true });
 
-        this.sendRecoverPasswordEmail(email, code);
+        let emailResponse = await this.sendRecoverPasswordEmail(email, code);
+        console.log("emailResponse", emailResponse);
+
+        return { message: "A message with recovery code has been sent." }
+
 
     }
 
@@ -98,7 +103,7 @@ export class AuthService {
 
     private sendRecoverPasswordEmail(email: string, code: string): Promise<void> {
         return this.emailService.sendMail({
-            to: email,
+            to: 'rafa.arraez.gue@gmail.com',
             subject: RECOVER_PASSWORD_EMAIL_SUBJECT,
             text: RECOVER_PASSWORD_EMAIL_BODY + code,
         });

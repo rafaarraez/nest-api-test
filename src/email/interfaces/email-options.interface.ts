@@ -1,7 +1,8 @@
 export interface EmailOptionsInterface {
   validationSchema: {
-    EMAIL_USER: string;
-    EMAIL_PASSWORD: string;
-    EMAIL_SERVICE: string;
+    user: string;
+    password: string;
+    host: string;
+    port: number;
   };
 }

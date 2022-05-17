@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { GenericResponse } from 'src/common/interfaces/generic-response.interface';
 import { AuthService } from './auth.service';
 import { CredentialsDto } from './dto/credentials.dto';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
@@ -15,7 +16,7 @@ export class AuthController {
         description: 'Sign up a user',
     })
     @Post('/signup')
-    signUp(@Body() credentialsDto: CredentialsDto): Promise<void> {
+    signUp(@Body() credentialsDto: CredentialsDto): Promise<GenericResponse> {
         return this.authService.signUp(credentialsDto);
     }
 
@@ -33,7 +34,7 @@ export class AuthController {
         description: 'Send an email with a code to allow the user to create a new password',
     })
     @Post('/recover-password')
-    requestRecoverPassword(@Body() recoverPasswordDto: RecoverPasswordDto): Promise<void> {
+    requestRecoverPassword(@Body() recoverPasswordDto: RecoverPasswordDto): Promise<GenericResponse> {
         return this.authService.requestPasswordRecovery(recoverPasswordDto);
     }
     @HttpCode(200)
