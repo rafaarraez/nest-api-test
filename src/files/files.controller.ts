@@ -59,7 +59,6 @@ export class FilesController {
     @Get('/download/:id')
     async downloadFile(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
         const s3Object = await this.filesService.downloadFile(id);
-
         const stream = getReadableStream(s3Object.Body as Buffer);
 
         res.set({
@@ -103,17 +102,17 @@ export class FilesController {
 
 
     @ApiOperation({
-        description: 'Get a random image from unsplash',
+        description: 'Get all files, filtered by user if user is not admin',
     })
-    @Get('unsplash')
+    @Get('/unsplash/get')
     async getPhotoFromUnsplash(): Promise<JSON> {
         return await this.filesService.getPhotoFromUnsplash();
     }
 
     @ApiOperation({
-        description: 'Get a random image from Unsplash and store it in AWS S3',
+        description: 'Found a random image an storage on AWS S3',
     })
-    @Post('unsplash')
+    @Post('/unsplash/upload')
     async uploadFileFromUnsplash(): Promise<File> {
         return await this.filesService.uploadFileFromUnsplash();
     }

@@ -15,7 +15,7 @@ import { PromiseResult } from 'aws-sdk/lib/request';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { GenericResponse } from 'src/common/interfaces/generic-response.interface';
 import { S3ResponseInterface } from './interfaces/s3-response.interface';
-
+import fs from 'fs'
 @Injectable()
 export class FilesService {
     private readonly s3Client: S3;
@@ -78,24 +78,22 @@ export class FilesService {
     }
 
     async uploadFileFromUnsplash(): Promise<File> {
-        let item = await this.unsplash.photos.getRandom();
+        const item = await this.unsplash.photos.getRandom({
+            query: 'cat',
+        });
 
-        let img = await nodeFetch(item.response.links.download)
+        const img = await nodeFetch(item.response.urls.small_s3)
+        const buffer = await this.getBufferFromUrlResponse(img);
 
-        let buffer = Buffer.from(await img.arrayBuffer())
-
-        let { mime } = fileType(buffer)
-
+        const { mime } = fileType(buffer)
         const fileExtension = this.getFileExtension(mime);
-
-        const fileFullPath = this.generateFilePath(item.response.description, this.folder, fileExtension);
-
+        const fileFullPath = this.generateFilePath(item.response.id, this.folder, fileExtension);
         const { fileStream, bufferSize } = this.convertToReadableStream(buffer);
 
         const response = await this.uploadS3(fileStream, fileFullPath, mime, bufferSize);
 
         const newFile: Partial<File> = {
-            name: item.response.description,
+            name: item.response.id,
             path: response.Key,
             url: response.Location,
             mimetype: mime
@@ -104,7 +102,6 @@ export class FilesService {
         await this.fileRepository.save(newFile);
 
         return newFile as File;
-
     }
 
     async downloadFile(id: number): Promise<PromiseResult<S3.GetObjectOutput, AWSError>> {
@@ -144,22 +141,6 @@ export class FilesService {
         return found;
     }
 
-    private async uploadS3(fileStream: Readable, fileFullPath: string, mimetype: string, bufferSize: number) {
-        const params: S3.PutObjectRequest = {
-            Bucket: this.bucket,
-            Body: fileStream,
-            Key: fileFullPath,
-            ContentType: mimetype,
-            ACL: 'public-read',
-            ContentLength: bufferSize,
-        };
-
-        const response = await this.s3Client.upload(params).promise();
-
-        return response;
-
-    }
-
     private sanitizeFolder(folder: string): string {
         const lastCharacterPosition = folder.length - 1;
         const lastCharacter = folder[lastCharacterPosition];
@@ -196,4 +177,25 @@ export class FilesService {
 
         return `${sanitizedFolder}/${fileUniqueName}.${extension}`;
     }
+
+    private async getBufferFromUrlResponse(img): Promise<Buffer> {
+        return Buffer.from(await img.arrayBuffer())
+    }
+
+    private async uploadS3(fileStream: Readable, fileFullPath: string, mimetype: string, bufferSize: number) {
+        const params: S3.PutObjectRequest = {
+            Bucket: this.bucket,
+            Body: fileStream,
+            Key: fileFullPath,
+            ContentType: mimetype,
+            ACL: 'public-read',
+            ContentLength: bufferSize,
+        };
+
+        const response = await this.s3Client.upload(params).promise();
+
+        return response;
+
+    }
+
 }
