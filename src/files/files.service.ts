@@ -79,16 +79,17 @@ export class FilesService {
 
     async uploadFileFromUnsplash(): Promise<File> {
         let item = await this.unsplash.photos.getRandom();
-        console.log('item.response.urls.small_s3', item.response.urls.small_s3);
 
-        let img = await nodeFetch(item.response.urls.small_s3)
+        let img = await nodeFetch(item.response.links.download)
+
         let buffer = Buffer.from(await img.arrayBuffer())
-        console.log('buffer', buffer);
 
         let { mime } = fileType(buffer)
 
         const fileExtension = this.getFileExtension(mime);
+
         const fileFullPath = this.generateFilePath(item.response.description, this.folder, fileExtension);
+
         const { fileStream, bufferSize } = this.convertToReadableStream(buffer);
 
         const response = await this.uploadS3(fileStream, fileFullPath, mime, bufferSize);
@@ -154,7 +155,6 @@ export class FilesService {
         };
 
         const response = await this.s3Client.upload(params).promise();
-        console.log('response', response);
 
         return response;
 
@@ -172,7 +172,6 @@ export class FilesService {
     }
 
     private convertToReadableStream(buffer: Buffer): ReadableFileInterface {
-        console.log(buffer, 'buffer from aja');
 
         const fileStream = new Readable();
         const bufferSize = buffer.length;
