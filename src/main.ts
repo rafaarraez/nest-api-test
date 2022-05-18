@@ -10,8 +10,8 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Nest Aluxion test')
     .setVersion('1.0')
-    .addTag('files')
     .addTag('auth')
+    .addTag('files')
     .addBearerAuth()
     .build();
 

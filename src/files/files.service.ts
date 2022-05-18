@@ -1,5 +1,8 @@
 import { v4, v5 } from 'uuid';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { createApi } from 'unsplash-js';
+import nodeFetch from 'node-fetch';
+import fileType from 'file-type';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AWSError, S3 } from 'aws-sdk';
@@ -11,14 +14,16 @@ import { CreateFileDto } from './dto/create-file.dto';
 import { PromiseResult } from 'aws-sdk/lib/request';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { GenericResponse } from 'src/common/interfaces/generic-response.interface';
+import { S3ResponseInterface } from './interfaces/s3-response.interface';
 
 @Injectable()
 export class FilesService {
     private readonly s3Client: S3;
-
     private readonly bucket: string;
     private readonly folder: string;
     private readonly region: string;
+
+    private readonly unsplash: nodeFetch;
 
     constructor(
         @InjectRepository(FileRepository)
@@ -33,6 +38,11 @@ export class FilesService {
 
         this.bucket = this.configService.get('AWS_BUCKET');
         this.folder = 'nest-test-develop';
+
+        this.unsplash = createApi({
+            accessKey: this.configService.get('UNSPLASH_ACCESS_KEY'),
+            fetch: nodeFetch,
+        });
     }
 
     async getFiles(): Promise<File[]> {
@@ -47,16 +57,7 @@ export class FilesService {
         const fileFullPath = this.generateFilePath(name, this.folder, fileExtension);
         const { fileStream, bufferSize } = this.convertToReadableStream(buffer);
 
-        const params: S3.PutObjectRequest = {
-            Bucket: this.bucket,
-            Body: fileStream,
-            Key: fileFullPath,
-            ContentType: mimetype,
-            ACL: 'public-read',
-            ContentLength: bufferSize,
-        };
-
-        const response = await this.s3Client.upload(params).promise();
+        const response = await this.uploadS3(fileStream, fileFullPath, mimetype, bufferSize);
 
         const newFile: Partial<File> = {
             name,
@@ -70,6 +71,41 @@ export class FilesService {
         return newFile as File;
 
     }
+
+    async getPhotoFromUnsplash(): Promise<JSON> {
+        let item = await this.unsplash.photos.getRandom();
+        return item;
+    }
+
+    async uploadFileFromUnsplash(): Promise<File> {
+        let item = await this.unsplash.photos.getRandom();
+        console.log('item.response.urls.small_s3', item.response.urls.small_s3);
+
+        let img = await nodeFetch(item.response.urls.small_s3)
+        let buffer = Buffer.from(await img.arrayBuffer())
+        console.log('buffer', buffer);
+
+        let { mime } = fileType(buffer)
+
+        const fileExtension = this.getFileExtension(mime);
+        const fileFullPath = this.generateFilePath(item.response.description, this.folder, fileExtension);
+        const { fileStream, bufferSize } = this.convertToReadableStream(buffer);
+
+        const response = await this.uploadS3(fileStream, fileFullPath, mime, bufferSize);
+
+        const newFile: Partial<File> = {
+            name: item.response.description,
+            path: response.Key,
+            url: response.Location,
+            mimetype: mime
+        };
+
+        await this.fileRepository.save(newFile);
+
+        return newFile as File;
+
+    }
+
     async downloadFile(id: number): Promise<PromiseResult<S3.GetObjectOutput, AWSError>> {
         const file = await this.getFileById(id);
 
@@ -107,6 +143,23 @@ export class FilesService {
         return found;
     }
 
+    private async uploadS3(fileStream: Readable, fileFullPath: string, mimetype: string, bufferSize: number) {
+        const params: S3.PutObjectRequest = {
+            Bucket: this.bucket,
+            Body: fileStream,
+            Key: fileFullPath,
+            ContentType: mimetype,
+            ACL: 'public-read',
+            ContentLength: bufferSize,
+        };
+
+        const response = await this.s3Client.upload(params).promise();
+        console.log('response', response);
+
+        return response;
+
+    }
+
     private sanitizeFolder(folder: string): string {
         const lastCharacterPosition = folder.length - 1;
         const lastCharacter = folder[lastCharacterPosition];
@@ -119,6 +172,8 @@ export class FilesService {
     }
 
     private convertToReadableStream(buffer: Buffer): ReadableFileInterface {
+        console.log(buffer, 'buffer from aja');
+
         const fileStream = new Readable();
         const bufferSize = buffer.length;
         fileStream._read = () => { };
@@ -141,12 +196,5 @@ export class FilesService {
         const sanitizedFolder = this.sanitizeFolder(folder);
 
         return `${sanitizedFolder}/${fileUniqueName}.${extension}`;
-    }
-
-    getReadableStream(buffer: Buffer): Readable {
-        const stream = new Readable();
-        stream.push(buffer);
-        stream.push(null);
-        return stream;
     }
 }

@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiTa
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GenericResponse } from 'src/common/interfaces/generic-response.interface';
+import { getReadableStream } from 'src/helpers/get-readable-stream';
 import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { File } from './file.entity';
@@ -58,7 +59,8 @@ export class FilesController {
     @Get('/download/:id')
     async downloadFile(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
         const s3Object = await this.filesService.downloadFile(id);
-        const stream = this.filesService.getReadableStream(s3Object.Body as Buffer);
+
+        const stream = getReadableStream(s3Object.Body as Buffer);
 
         res.set({
             'Content-Type': s3Object.ContentType,
@@ -97,5 +99,22 @@ export class FilesController {
     })
     getFile(@Param('id', ParseIntPipe) id: number): Promise<File> {
         return this.filesService.getFileById(id);
+    }
+
+
+    @ApiOperation({
+        description: 'Get a random image from unsplash',
+    })
+    @Get('unsplash')
+    async getPhotoFromUnsplash(): Promise<JSON> {
+        return await this.filesService.getPhotoFromUnsplash();
+    }
+
+    @ApiOperation({
+        description: 'Get a random image from Unsplash and store it in AWS S3',
+    })
+    @Post('unsplash')
+    async uploadFileFromUnsplash(): Promise<File> {
+        return await this.filesService.uploadFileFromUnsplash();
     }
 }
