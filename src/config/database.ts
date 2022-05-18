@@ -9,7 +9,7 @@ export default () => ({
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST,
     username: process.env.DB_USER,
-    synchronize: process.env.NODE_ENV === 'development',
+    synchronize: process.env.DB_SYNC === 'true',
     entities: [__dirname + '/../**/*.entity.{js,ts}'],
     //logging: true,
     port: parseInt(process.env.DB_PORT),
