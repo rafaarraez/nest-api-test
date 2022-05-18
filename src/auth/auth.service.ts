@@ -7,7 +7,7 @@ import { SignInResponseDto } from './dto/signin-response.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { UserRepository } from './user.repository';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { utc } from 'moment/moment';
 import { randomInt } from 'crypto';
 import { Repository } from 'typeorm';
