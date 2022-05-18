@@ -6,7 +6,7 @@ This is a NestJS API
 
 For the database we need PostgreSQL.
 
-Before starting the application you need to define an .env file in the root folder with the following environment variables. 
+First of all, we must create an .env file in the root folder of the project with the following environment variables:
 
 ```
 PORT=
