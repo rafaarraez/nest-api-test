@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -24,11 +24,10 @@ export class FilesController {
         type: [File],
     })
     @Get()
-    getFiles(): Promise<File[]> {
-        return this.filesService.getFiles();
+    async getFiles(): Promise<File[]> {
+        return await this.filesService.getFiles();
     }
 
-    @Post('upload')
     @ApiConsumes('multipart/form-data')
     @ApiBody({
         schema: {
@@ -48,9 +47,13 @@ export class FilesController {
     @ApiOkResponse({
         type: File,
     })
+    @Post('upload')
     @UseInterceptors(FileInterceptor('file'))
-    uploadFile(@Body() createFileDto: CreateFileDto, @UploadedFile() file: Express.Multer.File): Promise<File> {
-        return this.filesService.uploadFile(createFileDto, file);
+    async uploadFile(@Body() createFileDto: CreateFileDto, @UploadedFile() file: Express.Multer.File): Promise<File> {
+        if (!file) {
+            throw new BadRequestException('the file should not be empty');
+        }
+        return await this.filesService.uploadFile(createFileDto, file);
     }
 
     @ApiOperation({
@@ -77,8 +80,8 @@ export class FilesController {
     })
     @Patch('/:id')
     @UsePipes(ValidationPipe)
-    updateFile(@Param('id', ParseIntPipe) id: number, @Body() updateFileDto: UpdateFileDto): Promise<File> {
-        return this.filesService.updateFile(id, updateFileDto);
+    async updateFile(@Param('id', ParseIntPipe) id: number, @Body() updateFileDto: UpdateFileDto): Promise<File> {
+        return await this.filesService.updateFile(id, updateFileDto);
     }
 
     @ApiOperation({
@@ -88,18 +91,20 @@ export class FilesController {
         type: GenericResponse,
     })
     @Delete('/:id')
-    deleteFile(@Param('id', ParseIntPipe) id: number): Promise<GenericResponse> {
-        return this.filesService.deleteFile(id);
+    async deleteFile(@Param('id', ParseIntPipe) id: number): Promise<GenericResponse> {
+        return await this.filesService.deleteFile(id);
     }
 
-    @Get('/:id')
     @ApiOkResponse({
         type: File,
     })
-    getFile(@Param('id', ParseIntPipe) id: number): Promise<File> {
-        return this.filesService.getFileById(id);
+    @ApiOkResponse({
+        type: File,
+    })
+    @Get('/:id')
+    async getFile(@Param('id', ParseIntPipe) id: number): Promise<File> {
+        return await this.filesService.getFileById(id);
     }
-
 
     @ApiOperation({
         description: 'Get all files, filtered by user if user is not admin',
@@ -111,6 +116,9 @@ export class FilesController {
 
     @ApiOperation({
         description: 'Found a random image an storage on AWS S3',
+    })
+    @ApiOkResponse({
+        type: File,
     })
     @Post('/unsplash/upload')
     async uploadFileFromUnsplash(): Promise<File> {

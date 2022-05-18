@@ -1,5 +1,5 @@
 import { v4, v5 } from 'uuid';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { createApi } from 'unsplash-js';
 import nodeFetch from 'node-fetch';
 import fileType from 'file-type';
@@ -46,12 +46,16 @@ export class FilesService {
     }
 
     async getFiles(): Promise<File[]> {
-        return this.fileRepository.getFiles();
+        return await this.fileRepository.getFiles();
     }
 
     async uploadFile(createFileDto: CreateFileDto, file: Express.Multer.File): Promise<File> {
         const { name } = createFileDto;
-        const { buffer, mimetype } = file
+        const { buffer, mimetype, originalname } = file
+
+        if (!originalname || !originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+            throw new BadRequestException('the file format is invalid, please send an image: jpg|jpeg|png|gif');
+        }
 
         const fileExtension = this.getFileExtension(mimetype);
         const fileFullPath = this.generateFilePath(name, this.folder, fileExtension);

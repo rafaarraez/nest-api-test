@@ -14,6 +14,7 @@ import { Repository } from 'typeorm';
 import { RecoverPassword } from './entities/recovery-password.entity';
 import { EmailService } from '../email/email.service';
 import {
+    EMAIL_SENDER,
     RECOVER_PASSWORD_CODE_EXPIRATION_ON_HOURS,
     RECOVER_PASSWORD_EMAIL_BODY,
     RECOVER_PASSWORD_EMAIL_SUBJECT,
@@ -73,7 +74,7 @@ export class AuthService {
 
     }
 
-    async updatePassword(updatePasswordDto: UpdatePasswordDto): Promise<void> {
+    async updatePassword(updatePasswordDto: UpdatePasswordDto): Promise<GenericResponse> {
         const { email, code, password } = updatePasswordDto;
         const userPromise = this.userRepository.findOne({ email }, { select: ['id'] });
 
@@ -98,11 +99,13 @@ export class AuthService {
         const user = await userPromise;
         user.password = await bcrypt.hash(password, await bcrypt.genSalt());;
         await this.userRepository.save(user);
+
+        return { message: "Your password has been successfully updated.." }
     }
 
     private sendRecoverPasswordEmail(email: string, code: string): Promise<void> {
         return this.emailService.sendMail({
-            from: 'aluxion@contact.com',
+            from: EMAIL_SENDER,
             to: email,
             subject: RECOVER_PASSWORD_EMAIL_SUBJECT,
             text: RECOVER_PASSWORD_EMAIL_BODY + code,

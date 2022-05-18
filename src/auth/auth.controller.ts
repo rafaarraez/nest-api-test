@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GenericResponse } from 'src/common/interfaces/generic-response.interface';
 import { AuthService } from './auth.service';
 import { CredentialsDto } from './dto/credentials.dto';
@@ -15,34 +15,45 @@ export class AuthController {
     @ApiOperation({
         description: 'Sign up a user',
     })
+    @ApiOkResponse({
+        type: GenericResponse,
+    })
     @Post('/signup')
-    signUp(@Body() credentialsDto: CredentialsDto): Promise<GenericResponse> {
-        return this.authService.signUp(credentialsDto);
+    async signUp(@Body() credentialsDto: CredentialsDto): Promise<GenericResponse> {
+        return await this.authService.signUp(credentialsDto);
     }
 
-    @HttpCode(200)
+
     @ApiOperation({
         description: 'Sign in a user',
     })
+    @ApiOkResponse({
+        type: SignInResponseDto,
+    })
     @Post('/signin')
-    signIn(@Body() credentialsDto: CredentialsDto): Promise<SignInResponseDto> {
-        return this.authService.signIn(credentialsDto);
+    async signIn(@Body() credentialsDto: CredentialsDto): Promise<SignInResponseDto> {
+        return await this.authService.signIn(credentialsDto);
     }
 
-    @HttpCode(200)
     @ApiOperation({
         description: 'Send an email with a code to allow the user to create a new password',
     })
+    @ApiOkResponse({
+        type: GenericResponse,
+    })
     @Post('/recover-password')
-    requestRecoverPassword(@Body() recoverPasswordDto: RecoverPasswordDto): Promise<GenericResponse> {
-        return this.authService.requestPasswordRecovery(recoverPasswordDto);
+    async requestRecoverPassword(@Body() recoverPasswordDto: RecoverPasswordDto): Promise<GenericResponse> {
+        return await this.authService.requestPasswordRecovery(recoverPasswordDto);
     }
-    @HttpCode(200)
+
     @ApiOperation({
         description: 'Allows an user to update his password if they lost/forgot it using a verification code',
     })
+    @ApiOkResponse({
+        type: GenericResponse,
+    })
     @Post('/update-password')
-    updatePassword(@Body() updatePasswordDto: UpdatePasswordDto): Promise<void> {
-        return this.authService.updatePassword(updatePasswordDto);
+    async updatePassword(@Body() updatePasswordDto: UpdatePasswordDto): Promise<GenericResponse> {
+        return await this.authService.updatePassword(updatePasswordDto);
     }
 }
